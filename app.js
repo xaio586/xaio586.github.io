@@ -27,10 +27,64 @@ async function syncProgress(){
 function completedCount(g){return (g.question_ids||g.questions?.map(q=>q.id)||[]).filter(id=>state.completed.has(id)).length}
 function toggleCompleted(questionId,groupId){state.completed.has(questionId)?state.completed.delete(questionId):state.completed.add(questionId);saveProgress(questionId,state.completed.has(questionId));void syncProgress();openSpeakingTopic(groupId);loadSpeakingGroups('#current-topic-list',state.currentFamily);if(state.categoryTopic)loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic)}
 let backdropCloseTimer;
+let drawerSwipe=null;
+let drawerSwipeTimer;
 const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 function setDetailContent(markup){const drawer=$('#detail-drawer');const content=$('#detail-content');const wasOpen=drawer.classList.contains('open');const previousScroll=drawer.scrollTop;content.innerHTML=markup;if(wasOpen){drawer.scrollTop=previousScroll;if(!reduceMotion())animateSurface(content)}else drawer.scrollTop=0}
-function openDrawer(immediate=false){const drawer=$('#detail-drawer');const backdrop=$('#drawer-backdrop');if(drawer.classList.contains('open'))return;clearTimeout(backdropCloseTimer);drawer.inert=false;backdrop.hidden=false;const reveal=()=>{drawer.classList.add('open');backdrop.classList.add('visible')};immediate?reveal():requestAnimationFrame(reveal);drawer.setAttribute('aria-hidden','false')}
-function closeDrawer(){const drawer=$('#detail-drawer');const backdrop=$('#drawer-backdrop');if(!drawer.classList.contains('open'))return;if(activeTopicTransition)activeTopicTransition.skipTransition();activeCoverMorph?.cancel();drawer.classList.remove('morph-open','open');backdrop.classList.remove('visible');drawer.setAttribute('aria-hidden','true');drawer.inert=true;clearTimeout(backdropCloseTimer);backdropCloseTimer=setTimeout(()=>{if(!drawer.classList.contains('open'))backdrop.hidden=true},260)}
+function resetDrawerSwipe(){
+  const drawer=$('#detail-drawer');const backdrop=$('#drawer-backdrop');
+  clearTimeout(drawerSwipeTimer);drawerSwipe=null;drawer.classList.remove('is-swipe-dragging','is-swipe-settling');
+  drawer.style.removeProperty('transform');drawer.style.removeProperty('transition');backdrop.style.removeProperty('opacity');backdrop.style.removeProperty('transition');
+}
+function openDrawer(immediate=false){const drawer=$('#detail-drawer');const backdrop=$('#drawer-backdrop');if(drawer.classList.contains('open'))return;resetDrawerSwipe();clearTimeout(backdropCloseTimer);drawer.inert=false;backdrop.hidden=false;const reveal=()=>{drawer.classList.add('open');backdrop.classList.add('visible')};immediate?reveal():requestAnimationFrame(reveal);drawer.setAttribute('aria-hidden','false')}
+function closeDrawer(){const drawer=$('#detail-drawer');const backdrop=$('#drawer-backdrop');if(!drawer.classList.contains('open'))return;if(activeTopicTransition)activeTopicTransition.skipTransition();activeCoverMorph?.cancel();drawer.classList.remove('morph-open','open');resetDrawerSwipe();backdrop.classList.remove('visible');drawer.setAttribute('aria-hidden','true');drawer.inert=true;clearTimeout(backdropCloseTimer);backdropCloseTimer=setTimeout(()=>{if(!drawer.classList.contains('open'))backdrop.hidden=true},260)}
+function bindDrawerSwipe(){
+  const drawer=$('#detail-drawer');const backdrop=$('#drawer-backdrop');
+  drawer.addEventListener('pointerdown',event=>{
+    if(drawerSwipe||!drawer.classList.contains('open')||!matchMedia('(max-width: 680px)').matches)return;
+    if(event.pointerType==='mouse'&&event.button!==0)return;
+    if(event.target.closest('button,a,input,select,summary'))return;
+    drawerSwipe={id:event.pointerId,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastAt:performance.now(),velocity:0,distance:0,dragging:false};
+  });
+  drawer.addEventListener('pointermove',event=>{
+    if(!drawerSwipe||event.pointerId!==drawerSwipe.id)return;
+    const dx=event.clientX-drawerSwipe.startX;const dy=event.clientY-drawerSwipe.startY;
+    if(!drawerSwipe.dragging){
+      if(Math.abs(dy)>8&&Math.abs(dy)>Math.abs(dx)){drawerSwipe=null;return}
+      if(dx<=8||dx<Math.abs(dy)*1.15)return;
+      drawerSwipe.dragging=true;drawer.classList.add('is-swipe-dragging');drawer.setPointerCapture?.(event.pointerId);
+    }
+    if(event.cancelable)event.preventDefault();
+    const now=performance.now();const elapsed=Math.max(1,now-drawerSwipe.lastAt);
+    drawerSwipe.velocity=(event.clientX-drawerSwipe.lastX)/elapsed;drawerSwipe.lastX=event.clientX;drawerSwipe.lastAt=now;
+    drawerSwipe.distance=Math.max(0,Math.min(dx,drawer.offsetWidth));
+    if(!reduceMotion()){
+      drawer.style.transform=`translate3d(${drawerSwipe.distance}px,0,0)`;
+      backdrop.style.opacity=String(Math.max(0,1-drawerSwipe.distance/drawer.offsetWidth));
+    }
+  },{passive:false});
+  const finish=(event,cancelled=false)=>{
+    if(!drawerSwipe||event.pointerId!==drawerSwipe.id)return;
+    const swipe=drawerSwipe;drawerSwipe=null;
+    if(!swipe.dragging)return;
+    if(drawer.hasPointerCapture?.(event.pointerId))drawer.releasePointerCapture(event.pointerId);
+    const dismiss=!cancelled&&(swipe.distance>=Math.min(180,drawer.offsetWidth*.28)||swipe.velocity>0.11);
+    drawer.classList.remove('is-swipe-dragging');
+    if(reduceMotion()){dismiss?closeDrawer():resetDrawerSwipe();return}
+    drawer.classList.add('is-swipe-settling');
+    drawer.style.transition='transform 260ms var(--ease-drawer)';
+    backdrop.style.transition='opacity 220ms var(--ease-out)';
+    if(dismiss){
+      drawer.style.transform='translate3d(105%,0,0)';backdrop.style.opacity='0';
+      drawerSwipeTimer=setTimeout(closeDrawer,260);
+    }else{
+      drawer.style.transform='translate3d(0,0,0)';backdrop.style.opacity='1';
+      drawerSwipeTimer=setTimeout(resetDrawerSwipe,260);
+    }
+  };
+  drawer.addEventListener('pointerup',event=>finish(event));
+  drawer.addEventListener('pointercancel',event=>finish(event,true));
+}
 
 async function loadStats(){const [p1,p23]=await Promise.all([api('/api/speaking-topics?part_group=p1'),api('/api/speaking-topics?part_group=p23')]);const questions=[...p1,...p23].reduce((n,g)=>n+g.question_count,0);$('#stats').innerHTML=`<div class="stat"><strong>${p1.length+p23.length}</strong><small>口语话题</small></div><div class="stat"><strong>${questions}</strong><small>独立小题</small></div>`}
 async function loadTopics(){const topics=await api('/api/topics');window.topicCache=topics;$('#topic-grid').innerHTML=topics.map((t,i)=>{const inks=t.palette?.inks||['#2148B8','#C65F38'];const visual=t.cover_url?`<span class="category-visual"><img src="${esc(coverThumb(t.cover_url))}" alt="" loading="lazy" decoding="async"></span>`:'<span class="category-visual category-placeholder"></span>';return `<button class="topic-card" data-topic="${t.key}" style="--cover-a:${esc(inks[0])};--cover-b:${esc(inks[1])}">${visual}<span class="topic-card-content"><span class="topic-icon">${String(i+1).padStart(2,'0')}</span><strong>${t.count}</strong><h2>${esc(t.name)}</h2><p>${esc(t.description)}</p></span></button>`}).join('');$$('.topic-card').forEach(card=>card.onclick=()=>showCategory(card.dataset.topic))}
@@ -703,4 +757,5 @@ if('serviceWorker'in navigator){
 }
 
 $$('.nav-item').forEach(b=>b.onclick=()=>switchView(b.dataset.view));$$('[data-family]').forEach(b=>b.onclick=()=>{$$('[data-family]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.currentFamily=b.dataset.family;loadSpeakingGroups('#current-topic-list',state.currentFamily)});$$('[data-category-family]').forEach(b=>b.onclick=()=>{$$('[data-category-family]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.categoryFamily=b.dataset.categoryFamily;loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic)});$$('[data-writing-tab]').forEach(b=>b.onclick=()=>{$$('[data-writing-tab]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.writingTab=b.dataset.writingTab;loadWriting()});$('#clear-category').onclick=clearCategory;$('#sync-button').onclick=sync;$('#offline-button').onclick=downloadForIPhone;$('#listen-button').onclick=()=>tts.active?toggleTts():startTts();$('#tts-top-stop').onclick=stopTts;$('#tts-toggle').onclick=toggleTts;$('#tts-next').onclick=skipTts;$('#tts-replay').onclick=replayTts;$('#tts-stop').onclick=stopTts;$('#tts-mode').onchange=()=>{if(tts.active){cancelCurrentSpeech();loadTtsItem()}};$('#index-button').onclick=async()=>{await api('/api/index-resources',{method:'POST',body:'{}'});toast('资料索引完成');loadWriting()};$('#close-drawer').onclick=closeDrawer;$('#drawer-backdrop').onclick=closeDrawer;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});let timer;$('#search-input').oninput=e=>{clearTimeout(timer);timer=setTimeout(()=>{state.search=e.target.value.trim();if(state.view==='current')loadSpeakingGroups('#current-topic-list',state.currentFamily);else if(state.view==='categories'&&state.categoryTopic)loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic);else if(state.view==='writing')loadWriting()},250)};$('#writing-search').oninput=()=>{clearTimeout(timer);timer=setTimeout(loadWriting,300)};
+bindDrawerSwipe();
 syncProgress().finally(()=>Promise.all([loadTopics(),loadStats()]).then(()=>loadSpeakingGroups('#current-topic-list','p1')).catch(e=>toast(e.message)));

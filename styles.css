@@ -309,6 +309,16 @@ body{background:#e1f5fe}
 .tts-active #offline-button,.tts-active #sync-button{display:none}
 #offline-button:disabled{opacity:.72;cursor:wait}
 @media(max-width:680px){.topbar{height:auto;min-height:0;gap:8px;flex-wrap:wrap;padding-bottom:8px}.topbar .search{order:1;width:100%;flex-basis:100%}.topbar #listen-button,.topbar #tts-top-stop,.topbar #offline-button,.topbar #sync-button{order:2;flex:1 1 29%;min-width:0;padding-inline:8px;font-size:.75rem}.tts-active .topbar #listen-button,.tts-active .topbar #tts-top-stop{flex-basis:44%}.view{padding-top:9px}}
+
+/* Mobile detail is dismissed like a physical sheet: drag it to the right. */
+.drawer.is-swipe-dragging{transition:none!important;will-change:transform;user-select:none}
+.drawer.is-swipe-settling{will-change:transform}
+@media(max-width:680px){
+  .drawer{height:100dvh;touch-action:pan-y;overscroll-behavior:contain}
+  .drawer .close{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip-path:inset(50%);overflow:hidden;white-space:nowrap}
+  .drawer:after{content:"";position:fixed;left:7px;top:50%;z-index:8;width:4px;height:42px;border-radius:999px;background:#ffffffa8;box-shadow:0 2px 12px #17337f24;transform:translateY(-50%);pointer-events:none}
+}
+@media(prefers-reduced-motion:reduce){.drawer.is-swipe-dragging,.drawer.is-swipe-settling{transition:none!important}}
 @media(display-mode:standalone){body{padding:0}.app-shell{min-height:100svh;padding-bottom:env(safe-area-inset-bottom)}main{padding-right:env(safe-area-inset-right)}@media(max-width:900px){.sidebar{padding-top:calc(11px + env(safe-area-inset-top));padding-left:calc(15px + env(safe-area-inset-left));padding-right:calc(15px + env(safe-area-inset-right))}}}
 
 /* Hands-free question and answer player. */
