@@ -704,7 +704,7 @@ async function playKokoroSegment(segment,token){
   const audio=tts.audio||new Audio();tts.audio=audio;
   audio.onended=null;audio.onerror=null;audio.loop=false;audio.src=url;audio.volume=1;audio.preload='auto';audio.playsInline=true;audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.82)/.82));
   audio.onended=()=>{if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
-  audio.onerror=()=>{if(tts.active&&!tts.paused&&token===tts.run)speakSystemSegment(segment,token)};
+  audio.onerror=()=>{if(tts.active&&!tts.paused&&token===tts.run){setTtsPauseUi(true);toast('Kokoro 音频加载失败，请检查网络后重试')}};
   try{await audio.play();return true}catch(_error){setTtsPauseUi(true);toast('请点绿色播放键启用 Kokoro 语音');return true}
 }
 async function speakTtsSegment(){
