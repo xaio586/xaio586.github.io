@@ -131,6 +131,8 @@
       vec2 p=uv*2.0-1.0;
       float aspect=u_resolution.x/max(u_resolution.y,1.0);
       p.x*=aspect;
+      float t=u_time*1.65;
+      p+=vec2(t*.018,-t*.012);
 
       vec2 mouse=u_mouse*2.0-1.0;
       mouse.x*=aspect;
@@ -138,20 +140,19 @@
       float mouseFalloff=1.0-smoothstep(0.0,.32,length(delta));
       p+=normalize(delta+vec2(.0001))*mouseFalloff*.055;
 
-      float t=u_time;
       float low=snoise3(vec3(p*.62,t*.05));
       vec2 warp1=vec2(
         snoise3(vec3(p*.82+vec2(1.7,-.4),t*.07)),
         snoise3(vec3(p*.82+vec2(-2.1,1.3),t*.065))
       );
-      vec2 q=p+warp1*.24+low*.08;
+      vec2 q=p+warp1*.30+low*.10;
       vec2 warp2=vec2(
         snoise3(vec3(q*1.35+vec2(-.8,2.4),t*.09)),
         snoise3(vec3(q*1.35+vec2(2.7,-1.8),t*.085))
       );
-      q+=warp2*.13;
+      q+=warp2*.17;
       float warp3=snoise3(vec3(q*2.15+warp1*.18,t*.12));
-      q+=vec2(warp3,-warp3)*.055;
+      q+=vec2(warp3,-warp3)*.075;
       float field=snoise4(vec4(q*1.08,t*.10,.37));
       field+=.34*snoise4(vec4(q*1.92+warp2*.12,t*.13,1.71));
       field=clamp(field*.36+.53,0.0,1.0);
