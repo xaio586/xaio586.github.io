@@ -375,6 +375,7 @@ function bindPhotoDeck(box,groups,navigation,toolbar){
     tl.to(ambientB,{opacity:1,duration:.68,ease:'power3.inOut'},.25);
   };
   track._ttsAdvance=()=>advance(1,1);
+  track._ttsNavigate=direction=>advance(direction,direction);
   track.onclick=e=>{
     if(Date.now()-(track._lastSwipeAt||0)<350||busy)return;
     const card=e.target.closest('.speaking-topic-card');
@@ -403,7 +404,7 @@ function bindPhotoDeck(box,groups,navigation,toolbar){
     if(!gesture||gesture.id!==e.pointerId)return;
     const dx=e.clientX-gesture.x;
     if(gesture.moved&&track.hasPointerCapture(e.pointerId))track.releasePointerCapture(e.pointerId);
-    if(gesture.moved&&Math.abs(dx)>track.clientWidth*.16){track._lastSwipeAt=Date.now();advance(1,Math.sign(dx))}
+    if(gesture.moved&&Math.abs(dx)>track.clientWidth*.16){track._lastSwipeAt=Date.now();advance(dx>0?-1:1,Math.sign(dx))}
     gesture=null;
   };
   track.onpointerup=endGesture;track.onpointercancel=endGesture;
@@ -504,7 +505,7 @@ async function openSpeakingTopic(id,trigger=null){
     const answer=q.answer?.answer_text||'';
     const label=q.answer?.source==='user_provided_document'?'资料示范答案':'本地练习草稿';
     const finished=state.completed.has(q.id);
-    return `<article class="practice-question ${finished?'is-complete':''}"><div class="question-number"><span>${partName(q.part)}</span><strong>${q.part==='part2'?'Cue Card':`Q${i+1}`}</strong><button class="done-toggle" data-complete-id="${q.id}" aria-pressed="${finished}">${finished?'✓ 已做':'○ 标记已做'}</button></div><div class="question-body"><div class="question-text">${esc(q.question_text)}</div>${answer?`<details><summary>查看答案</summary><span class="answer-source">${label}</span><div class="answer-text">${esc(answer)}</div></details>`:`<button class="secondary generate-answer" data-question-id="${q.id}">生成答案</button>`}</div></article>`;
+    return `<article class="practice-question ${finished?'is-complete':''}" data-question-id="${q.id}"><div class="question-number"><span>${partName(q.part)}</span><strong>${q.part==='part2'?'Cue Card':`Q${i+1}`}</strong><button class="done-toggle" data-complete-id="${q.id}" aria-pressed="${finished}">${finished?'✓ 已做':'○ 标记已做'}</button></div><div class="question-body"><div class="question-text">${esc(q.question_text)}</div>${answer?`<details><summary>查看答案</summary><span class="answer-source">${label}</span><div class="answer-text">${esc(answer)}</div></details>`:`<button class="secondary generate-answer" data-question-id="${q.id}">生成答案</button>`}</div></article>`;
   }).join('');
   const markup=`<div class="drawer-cover">${coverVisual(g)}</div><span class="detail-label">${g.family==='p1'?'PART 1':'PART 2 & 3'} · ${esc(topicName(g.topic))}</span><h2>${esc(g.title)}</h2><p class="drawer-intro">关键词 · ${(g.keywords||[]).map(esc).join(' / ')}<br>练习进度 ${done}/${g.question_count} · 每道题单独作答。</p><div class="practice-list">${questions}</div>`;
   if(activeTopicTransition)activeTopicTransition.skipTransition();
@@ -577,10 +578,14 @@ function resourceMarkup(d){const meta=d.metadata||{};const kind=meta.file_type==
 async function loadWriting(){const box=$('#writing-list');const tab=state.writingTab;const searchWrap=$('#writing-search-wrap');searchWrap.hidden=tab==='questions';box.innerHTML='<div class="empty-state"><strong>正在读取写作内容…</strong></div>';if(tab==='questions'){const items=await api('/api/questions?skill=writing&limit=200');box.innerHTML=items.map(q=>`<article class="question-card writing-question" data-id="${q.id}" tabindex="0"><div class="card-top"><span class="badge">${partName(q.part)}</span><span class="answer-dot">${q.has_answer?'● 有范文':'○ 待生成'}</span></div><h3>${esc(q.question_text.split('\n')[0])}</h3><div class="card-meta"><span>${esc(topicName(q.topic))}</span><span>·</span><span>${esc(q.title)}</span></div></article>`).join('');$$('.writing-question').forEach(card=>card.onclick=()=>openQuestion(card.dataset.id));animateSurface(box);return}const term=$('#writing-search').value.trim();const section=tab==='simon'?'simon':'writing_library';const q=new URLSearchParams({section});if(term)q.set('q',term);let docs=await api('/api/resources?'+q);if(tab==='task1')docs=docs.filter(d=>(d.metadata.category||'').startsWith('task1_'));if(tab==='task2')docs=docs.filter(d=>(d.metadata.category||'').startsWith('task2_'));box.innerHTML=docs.length?docs.map(resourceMarkup).join(''):'<div class="empty-state"><strong>没有匹配的资料</strong></div>';animateSurface(box)}
 
 function switchView(view){if(state.view===view)return;state.view=view;$$('.view').forEach(v=>v.classList.toggle('active',v.id===view+'-view'));$$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===view));$('#search-input').placeholder=view==='writing'?'搜索写作题目或资料':'搜索口语话题';if(view==='current')loadSpeakingGroups('#current-topic-list',state.currentFamily);if(view==='categories'&&!state.categoryTopic)loadTopics();if(view==='writing')loadWriting()}
-async function sync(){const b=$('#sync-button');b.disabled=true;b.textContent='正在更新…';try{const r=await api('/api/update',{method:'POST',body:JSON.stringify({limit:20})});toast(`更新完成：新增 ${r.inserted}，更新 ${r.updated}`);await Promise.all([loadStats(),loadTopics()]);switchView(state.view)}catch(e){toast('更新失败：'+e.message)}finally{b.disabled=false;b.textContent='更新资料'}}
+async function sync(){const b=$('#sync-button');b.disabled=true;b.textContent='正在更新…';try{const r=await api('/api/update',{method:'POST',body:JSON.stringify({limit:20})});await Promise.all([loadStats(),loadTopics()]);switchView(state.view);if(r.complete){toast(`全部更新完成：新增 ${r.inserted}，更新 ${r.updated}`)}else{const details=Object.entries(r.stages||{}).map(([name,status])=>`${name}：${status}`).join('\n');toast('还有步骤未完成，已列出明细');alert(`本次尚未全部完成\n\n${details}\n\n确认后请等待每日自动任务继续处理。`)}}catch(e){toast('更新失败：'+e.message)}finally{b.disabled=false;b.textContent='更新资料'}}
 
-const tts={active:false,paused:false,items:[],itemIndex:0,segments:[],segmentIndex:0,run:0,wakeLock:null,kind:'speaking'};
+const tts={active:false,paused:false,items:[],itemIndex:0,segments:[],segmentIndex:0,run:0,wakeLock:null,kind:'speaking',audio:null,autoplay:localStorage.getItem('ielts-tts-autoplay')!=='false'};
 const ttsPlayer=()=>$('#tts-player');
+let kokoroManifestPromise;
+function kokoroManifest(){
+  return kokoroManifestPromise||(kokoroManifestPromise=fetch('/assets/audio/kokoro/manifest.json').then(response=>response.ok?response.json():null).catch(()=>null));
+}
 function speechChunks(text,max=175){
   const clean=String(text||'').replace(/https?:\/\/\S+/g,'').replace(/\s+/g,' ').trim();
   if(!clean)return [];
@@ -597,7 +602,7 @@ function speechChunks(text,max=175){
   if(current)chunks.push(current);
   return chunks;
 }
-function ttsSegment(text,label){return speechChunks(text).map(chunk=>({text:chunk,label}))}
+function ttsSegment(text,label,targetId=''){return speechChunks(text).map(chunk=>({text:chunk,label,targetId}))}
 function preferredVoice(text){
   const chinese=/[\u3400-\u9fff]/.test(text);
   const voices=speechSynthesis.getVoices();
@@ -634,19 +639,19 @@ function setTtsVisual(item){
 function buildSpeakingSegments(group){
   const segments=[...ttsSegment(`Topic. ${group.title}`,'主题')];
   group.questions.forEach((question,index)=>{
-    segments.push(...ttsSegment(`${partName(question.part)}. Question ${index+1}. ${question.question_text}`,`问题 ${index+1} / ${group.questions.length}`));
+    segments.push(...ttsSegment(`${partName(question.part)}. Question ${index+1}. ${question.question_text}`,`问题 ${index+1} / ${group.questions.length}`,question.id));
     if($('#tts-mode').value==='qa'){
       const answer=question.answer?.answer_text?.trim();
-      segments.push(...ttsSegment(answer?`Answer. ${answer}`:'答案。暂无。',answer?'答案':'暂无答案'));
+      segments.push(...ttsSegment(answer?`Answer. ${answer}`:'答案。暂无。',answer?'答案':'暂无答案',question.id));
     }
   });
   return segments;
 }
 function buildWritingSegments(question){
-  const segments=[...ttsSegment(`${partName(question.part)}. ${question.title||''}. ${question.question_text}`,'写作题目')];
+  const segments=[...ttsSegment(`${partName(question.part)}. ${question.title||''}. ${question.question_text}`,'写作题目',question.id)];
   if($('#tts-mode').value==='qa'){
     const answer=question.answer?.answer_text?.trim();
-    segments.push(...ttsSegment(answer?`Model answer. ${answer}`:'答案。暂无。',answer?'参考范文':'暂无答案'));
+    segments.push(...ttsSegment(answer?`Model answer. ${answer}`:'答案。暂无。',answer?'参考范文':'暂无答案',question.id));
   }
   return segments;
 }
@@ -664,31 +669,50 @@ async function loadTtsItem(){
     speakTtsSegment();
   }catch(error){toast('语音读取失败：'+error.message);stopTts()}
 }
-function speakTtsSegment(){
-  if(!tts.active||tts.paused)return;
-  if(tts.segmentIndex>=tts.segments.length){advanceTtsItem();return}
-  const segment=tts.segments[tts.segmentIndex];
-  const token=++tts.run;
+function speakSystemSegment(segment,token){
+  if(!('speechSynthesis'in window)){tts.segmentIndex+=1;speakTtsSegment();return}
   const utterance=new SpeechSynthesisUtterance(segment.text);
   utterance.rate=Number($('#tts-rate').value)||.82;
   utterance.pitch=.98;utterance.lang=/[\u3400-\u9fff]/.test(segment.text)?'zh-CN':'en-GB';
   const voice=preferredVoice(segment.text);if(voice)utterance.voice=voice;
-  $('#tts-detail').textContent=segment.label;
   utterance.onend=()=>{if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
   utterance.onerror=event=>{if(tts.active&&token===tts.run&&event.error!=='interrupted'&&event.error!=='canceled'){tts.segmentIndex+=1;speakTtsSegment()}};
   speechSynthesis.speak(utterance);
 }
+async function playKokoroSegment(segment,token){
+  const manifest=await kokoroManifest();
+  const url=manifest?.items?.[segment.text];
+  if(!url||!tts.active||tts.paused||token!==tts.run)return false;
+  const audio=new Audio(url);tts.audio=audio;
+  audio.preload='auto';audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.82)/.82));
+  audio.onended=()=>{if(tts.audio===audio)tts.audio=null;if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
+  audio.onerror=()=>{if(tts.audio===audio)tts.audio=null;if(tts.active&&!tts.paused&&token===tts.run)speakSystemSegment(segment,token)};
+  try{await audio.play();$('#tts-detail').textContent=`${segment.label} · Kokoro`;return true}catch(_error){if(tts.audio===audio)tts.audio=null;return false}
+}
+async function speakTtsSegment(){
+  if(!tts.active||tts.paused)return;
+  if(tts.segmentIndex>=tts.segments.length){advanceTtsItem();return}
+  const segment=tts.segments[tts.segmentIndex];
+  const token=++tts.run;
+  $('#tts-detail').textContent=segment.label;
+  if(await playKokoroSegment(segment,token))return;
+  if(tts.active&&!tts.paused&&token===tts.run)speakSystemSegment(segment,token);
+}
+function setTtsPauseUi(paused){
+  tts.paused=paused;ttsPlayer().classList.toggle('is-paused',paused);$('#tts-toggle').textContent=paused?'▶':'Ⅱ';$('#tts-toggle').setAttribute('aria-label',paused?'继续':'暂停');$('#listen-button').textContent=paused?'▶ 继续':'Ⅱ 暂停';
+}
 function advanceTtsItem(){
   if(!tts.active)return;
+  if(!tts.autoplay){setTtsPauseUi(true);$('#tts-detail').textContent='本话题播放完毕';return}
   if(tts.itemIndex>=tts.items.length-1){toast('当前题库已播放完');stopTts();return}
   tts.itemIndex+=1;tts.segments=[];tts.segmentIndex=0;
   if(tts.kind==='speaking')activeDeckTrack()?._ttsAdvance?.();
   setTimeout(loadTtsItem,tts.kind==='speaking'&&!reduceMotion()?1250:120);
 }
-function cancelCurrentSpeech(){tts.run+=1;speechSynthesis.resume();speechSynthesis.cancel()}
+function cancelCurrentSpeech(){tts.run+=1;if(tts.audio){tts.audio.pause();tts.audio.removeAttribute('src');tts.audio.load();tts.audio=null}if('speechSynthesis'in window){speechSynthesis.resume();speechSynthesis.cancel()}}
 function stopTts(){
-  tts.active=false;tts.paused=false;tts.run+=1;speechSynthesis.resume();speechSynthesis.cancel();
-  setTimeout(()=>{if(!tts.active){speechSynthesis.resume();speechSynthesis.cancel()}},80);
+  tts.active=false;tts.paused=false;cancelCurrentSpeech();
+  setTimeout(()=>{if(!tts.active&&'speechSynthesis'in window){speechSynthesis.resume();speechSynthesis.cancel()}},80);
   tts.items=[];tts.segments=[];
   ttsPlayer().hidden=true;ttsPlayer().classList.remove('is-paused');document.body.classList.remove('tts-active');$('#tts-top-stop').hidden=true;$('#listen-button').textContent='▷ 听题库';
   $$('.tts-reading').forEach(el=>el.classList.remove('tts-reading'));
@@ -696,14 +720,14 @@ function stopTts(){
 }
 function toggleTts(){
   if(!tts.active)return;
-  tts.paused=!tts.paused;ttsPlayer().classList.toggle('is-paused',tts.paused);$('#tts-toggle').textContent=tts.paused?'继续':'暂停';
-  $('#listen-button').textContent=tts.paused?'▶ 继续':'Ⅱ 暂停';
-  if(tts.paused)speechSynthesis.pause();else{speechSynthesis.resume();if(!speechSynthesis.speaking)speakTtsSegment()}
+  setTtsPauseUi(!tts.paused);
+  if(tts.paused){if(tts.audio)tts.audio.pause();else if('speechSynthesis'in window)speechSynthesis.pause()}
+  else if(tts.audio)tts.audio.play().catch(()=>speakTtsSegment());else{if('speechSynthesis'in window)speechSynthesis.resume();if(!('speechSynthesis'in window)||!speechSynthesis.speaking)speakTtsSegment()}
 }
 async function startTts(){
-  if(!('speechSynthesis'in window)){toast('当前浏览器不支持文字转语音');return}
+  if(!('Audio'in window)&&!('speechSynthesis'in window)){toast('当前浏览器不支持语音播放');return}
   cancelCurrentSpeech();
-  const primer=new SpeechSynthesisUtterance('\u00a0');primer.volume=0;speechSynthesis.speak(primer);
+  if('speechSynthesis'in window){const primer=new SpeechSynthesisUtterance('\u00a0');primer.volume=0;speechSynthesis.speak(primer)}
   let items=[];let kind='speaking';
   if(state.view==='writing'){
     if(state.writingTab!=='questions'){toast('请先切换到“写作题目”');return}
@@ -721,11 +745,29 @@ async function startTts(){
   }
   if(!items.length){toast('当前板块没有可朗读题目');return}
   tts.active=true;tts.paused=false;tts.items=items;tts.itemIndex=0;tts.kind=kind;ttsPlayer().hidden=false;ttsPlayer().classList.remove('is-paused');
-  $('#tts-toggle').textContent='暂停';document.body.classList.add('tts-active');$('#tts-top-stop').hidden=false;$('#listen-button').textContent='Ⅱ 暂停';
+  setTtsPauseUi(false);document.body.classList.add('tts-active');$('#tts-top-stop').hidden=false;$('#tts-auto').setAttribute('aria-pressed',String(tts.autoplay));$('#tts-auto').textContent=tts.autoplay?'连播 开':'连播 关';
   await holdScreenAwake();loadTtsItem();
 }
-function skipTts(){if(!tts.active)return;cancelCurrentSpeech();tts.segmentIndex+=1;speakTtsSegment()}
+function navigateTtsItem(direction){
+  if(!tts.active||!tts.items.length)return;
+  cancelCurrentSpeech();tts.itemIndex=(tts.itemIndex+direction+tts.items.length)%tts.items.length;tts.segments=[];tts.segmentIndex=0;setTtsPauseUi(false);
+  if(tts.kind==='speaking')activeDeckTrack()?._ttsNavigate?.(direction);
+  setTimeout(loadTtsItem,tts.kind==='speaking'&&!reduceMotion()?1250:120);
+}
+async function openCurrentTtsItem(){
+  if(!tts.active||!tts.items.length)return;
+  const item=tts.items[tts.itemIndex];
+  const segment=tts.segments[tts.segmentIndex];
+  if(item.kind==='speaking'){
+    await openSpeakingTopic(item.id);
+    if(segment?.targetId){
+      setTimeout(()=>document.querySelector(`.practice-question[data-question-id="${CSS.escape(segment.targetId)}"]`)?.scrollIntoView({behavior:reduceMotion()?'auto':'smooth',block:'center'}),reduceMotion()?0:520);
+    }
+  }else await openQuestion(item.id);
+}
 function replayTts(){if(!tts.active)return;cancelCurrentSpeech();speakTtsSegment()}
+function toggleTtsAutoplay(){tts.autoplay=!tts.autoplay;localStorage.setItem('ielts-tts-autoplay',String(tts.autoplay));$('#tts-auto').setAttribute('aria-pressed',String(tts.autoplay));$('#tts-auto').textContent=tts.autoplay?'连播 开':'连播 关'}
+function skipTts(){navigateTtsItem(1)}
 document.addEventListener('visibilitychange',()=>{if(tts.active&&document.visibilityState==='visible')void holdScreenAwake()});
 
 async function registerPwa(){
@@ -757,5 +799,9 @@ if('serviceWorker'in navigator){
 }
 
 $$('.nav-item').forEach(b=>b.onclick=()=>switchView(b.dataset.view));$$('[data-family]').forEach(b=>b.onclick=()=>{$$('[data-family]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.currentFamily=b.dataset.family;loadSpeakingGroups('#current-topic-list',state.currentFamily)});$$('[data-category-family]').forEach(b=>b.onclick=()=>{$$('[data-category-family]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.categoryFamily=b.dataset.categoryFamily;loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic)});$$('[data-writing-tab]').forEach(b=>b.onclick=()=>{$$('[data-writing-tab]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.writingTab=b.dataset.writingTab;loadWriting()});$('#clear-category').onclick=clearCategory;$('#sync-button').onclick=sync;$('#offline-button').onclick=downloadForIPhone;$('#listen-button').onclick=()=>tts.active?toggleTts():startTts();$('#tts-top-stop').onclick=stopTts;$('#tts-toggle').onclick=toggleTts;$('#tts-next').onclick=skipTts;$('#tts-replay').onclick=replayTts;$('#tts-stop').onclick=stopTts;$('#tts-mode').onchange=()=>{if(tts.active){cancelCurrentSpeech();loadTtsItem()}};$('#index-button').onclick=async()=>{await api('/api/index-resources',{method:'POST',body:'{}'});toast('资料索引完成');loadWriting()};$('#close-drawer').onclick=closeDrawer;$('#drawer-backdrop').onclick=closeDrawer;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});let timer;$('#search-input').oninput=e=>{clearTimeout(timer);timer=setTimeout(()=>{state.search=e.target.value.trim();if(state.view==='current')loadSpeakingGroups('#current-topic-list',state.currentFamily);else if(state.view==='categories'&&state.categoryTopic)loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic);else if(state.view==='writing')loadWriting()},250)};$('#writing-search').oninput=()=>{clearTimeout(timer);timer=setTimeout(loadWriting,300)};
+$('#tts-prev').onclick=()=>navigateTtsItem(-1);
+$('#tts-auto').onclick=toggleTtsAutoplay;
+$('#tts-open-current').onclick=openCurrentTtsItem;
+$('#tts-rate').onchange=()=>{if(tts.audio)tts.audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.72)/.82))};
 bindDrawerSwipe();
 syncProgress().finally(()=>Promise.all([loadTopics(),loadStats()]).then(()=>loadSpeakingGroups('#current-topic-list','p1')).catch(e=>toast(e.message)));

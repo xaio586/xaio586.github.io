@@ -15,7 +15,7 @@
     const method=(options.method||'GET').toUpperCase();
     if(method!=='GET'){
       if(url.pathname==='/api/progress')return json({saved:0,local_only:true});
-      if(url.pathname==='/api/update')return json({inserted:0,updated:0,unchanged:0,static_site:true});
+      if(url.pathname==='/api/update')return json({inserted:0,updated:0,unchanged:0,complete:false,static_site:true,stages:{'手机端检查':'已提交','题库数据':'等待每日 12:00 自动任务','新题答案':'等待自动任务','主题封面':'等待自动任务','Kokoro 语音':'等待自动任务','手机版发布':'等待自动任务'}});
       return notFound('手机版为只读题库，内容由每日同步任务更新');
     }
     const data=await snapshot();
