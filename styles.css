@@ -305,8 +305,10 @@ body{background:#e1f5fe}
 /* iPhone/PWA controls share the same translucent treatment as the rest of the toolbar. */
 #offline-button{white-space:nowrap;background:#ffffff8f;border-color:#ffffffb8;color:#29436c;-webkit-backdrop-filter:blur(14px) saturate(120%);backdrop-filter:blur(14px) saturate(120%)}
 #listen-button{white-space:nowrap;background:#ffffffa8;border-color:#ffffffd6;color:#17337f;-webkit-backdrop-filter:blur(14px) saturate(120%);backdrop-filter:blur(14px) saturate(120%)}
+#tts-top-stop{white-space:nowrap;background:#17337fdb;border-color:#ffffffd6;color:#fff;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.tts-active #offline-button,.tts-active #sync-button{display:none}
 #offline-button:disabled{opacity:.72;cursor:wait}
-@media(max-width:680px){.topbar{height:auto;min-height:0;gap:8px;flex-wrap:wrap;padding-bottom:8px}.topbar .search{order:1;width:100%;flex-basis:100%}.topbar #listen-button,.topbar #offline-button,.topbar #sync-button{order:2;flex:1 1 29%;min-width:0;padding-inline:8px;font-size:.75rem}.view{padding-top:9px}}
+@media(max-width:680px){.topbar{height:auto;min-height:0;gap:8px;flex-wrap:wrap;padding-bottom:8px}.topbar .search{order:1;width:100%;flex-basis:100%}.topbar #listen-button,.topbar #tts-top-stop,.topbar #offline-button,.topbar #sync-button{order:2;flex:1 1 29%;min-width:0;padding-inline:8px;font-size:.75rem}.tts-active .topbar #listen-button,.tts-active .topbar #tts-top-stop{flex-basis:44%}.view{padding-top:9px}}
 @media(display-mode:standalone){body{padding:0}.app-shell{min-height:100svh;padding-bottom:env(safe-area-inset-bottom)}main{padding-right:env(safe-area-inset-right)}@media(max-width:900px){.sidebar{padding-top:calc(11px + env(safe-area-inset-top));padding-left:calc(15px + env(safe-area-inset-left));padding-right:calc(15px + env(safe-area-inset-right))}}}
 
 /* Hands-free question and answer player. */
