@@ -588,7 +588,7 @@ async function loadWriting(){const box=$('#writing-list');const tab=state.writin
 function switchView(view){if(state.view===view)return;state.view=view;$$('.view').forEach(v=>v.classList.toggle('active',v.id===view+'-view'));$$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===view));$('#search-input').placeholder=view==='writing'?'搜索写作题目或资料':'搜索口语话题';if(view==='current')loadSpeakingGroups('#current-topic-list',state.currentFamily);if(view==='categories'&&!state.categoryTopic)loadTopics();if(view==='writing')loadWriting()}
 async function sync(){const b=$('#sync-button');b.disabled=true;b.textContent='正在更新…';try{const r=await api('/api/update',{method:'POST',body:JSON.stringify({limit:20})});await Promise.all([loadStats(),loadTopics()]);switchView(state.view);if(r.complete){toast(`全部更新完成：新增 ${r.inserted}，更新 ${r.updated}`)}else{const details=Object.entries(r.stages||{}).map(([name,status])=>`${name}：${status}`).join('\n');toast('还有步骤未完成，已列出明细');alert(`本次尚未全部完成\n\n${details}\n\n确认后请等待每日自动任务继续处理。`)}}catch(e){toast('更新失败：'+e.message)}finally{b.disabled=false;b.textContent='更新资料'}}
 
-const tts={active:false,paused:false,items:[],itemIndex:0,segments:[],segmentIndex:0,run:0,wakeLock:null,kind:'speaking',audio:null,autoplay:localStorage.getItem('ielts-tts-autoplay')!=='false'};
+const tts={active:false,paused:false,loading:false,items:[],itemIndex:0,segments:[],segmentIndex:0,run:0,wakeLock:null,kind:'speaking',audio:null,autoplay:localStorage.getItem('ielts-tts-autoplay')!=='false'};
 const ttsPlayer=()=>$('#tts-player');
 let kokoroManifestPromise;
 function unlockTtsAudio(){
@@ -698,14 +698,16 @@ function speakSystemSegment(segment,token){
   speechSynthesis.speak(utterance);
 }
 async function playKokoroSegment(segment,token){
+  const loadingTimer=setTimeout(()=>setTtsLoading(true,token),150);
+  const finishLoading=()=>{clearTimeout(loadingTimer);setTtsLoading(false,token)};
   const manifest=await kokoroManifest();
   const url=manifest?.items?.[segment.text];
-  if(!url||!tts.active||tts.paused||token!==tts.run)return false;
+  if(!url||!tts.active||tts.paused||token!==tts.run){finishLoading();return false}
   const audio=tts.audio||new Audio();tts.audio=audio;
   audio.onended=null;audio.onerror=null;audio.loop=false;audio.src=url;audio.volume=1;audio.preload='auto';audio.playsInline=true;audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.82)/.82));
   audio.onended=()=>{if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
-  audio.onerror=()=>{if(tts.active&&!tts.paused&&token===tts.run){setTtsPauseUi(true);toast('Kokoro 音频加载失败，请检查网络后重试')}};
-  try{await audio.play();return true}catch(_error){setTtsPauseUi(true);toast('请点绿色播放键启用 Kokoro 语音');return true}
+  audio.onerror=()=>{finishLoading();if(tts.active&&!tts.paused&&token===tts.run){setTtsPauseUi(true);toast('Kokoro 音频加载失败，请检查网络后重试')}};
+  try{await audio.play();finishLoading();return true}catch(_error){finishLoading();setTtsPauseUi(true);toast('请点绿色播放键启用 Kokoro 语音');return true}
 }
 async function speakTtsSegment(){
   if(!tts.active||tts.paused)return;
@@ -718,6 +720,11 @@ async function speakTtsSegment(){
 function setTtsPauseUi(paused){
   tts.paused=paused;ttsPlayer().classList.toggle('is-paused',paused);$('#tts-toggle').textContent=paused?'▶':'Ⅱ';$('#tts-toggle').setAttribute('aria-label',paused?'继续':'暂停');$('#listen-button').textContent=paused?'▶ 继续':'Ⅱ 暂停';
 }
+function setTtsLoading(loading,token=tts.run){
+  if(token!==tts.run)return;
+  tts.loading=loading;ttsPlayer().classList.toggle('is-loading',loading);$('#tts-toggle').setAttribute('aria-busy',String(loading));
+  $('#tts-toggle').setAttribute('aria-label',loading?'正在加载语音':(tts.paused?'继续':'暂停'));
+}
 function advanceTtsItem(){
   if(!tts.active)return;
   if(!tts.autoplay){setTtsPauseUi(true);return}
@@ -726,7 +733,7 @@ function advanceTtsItem(){
   if(tts.kind==='speaking')activeDeckTrack()?._ttsAdvance?.();
   setTimeout(loadTtsItem,tts.kind==='speaking'&&!reduceMotion()?1250:120);
 }
-function cancelCurrentSpeech(){tts.run+=1;if(tts.audio){tts.audio.pause();tts.audio.onended=null;tts.audio.onerror=null;try{tts.audio.currentTime=0}catch(_error){}}if('speechSynthesis'in window){speechSynthesis.resume();speechSynthesis.cancel()}}
+function cancelCurrentSpeech(){tts.run+=1;setTtsLoading(false);if(tts.audio){tts.audio.pause();tts.audio.onended=null;tts.audio.onerror=null;try{tts.audio.currentTime=0}catch(_error){}}if('speechSynthesis'in window){speechSynthesis.resume();speechSynthesis.cancel()}}
 function stopTts(){
   tts.active=false;tts.paused=false;cancelCurrentSpeech();
   setTimeout(()=>{if(!tts.active&&'speechSynthesis'in window){speechSynthesis.resume();speechSynthesis.cancel()}},80);
