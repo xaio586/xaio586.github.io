@@ -663,8 +663,10 @@ async function loadTtsItem(){
     if(!tts.active)return;
     tts.segments=item.kind==='speaking'?buildSpeakingSegments(detail):buildWritingSegments(detail);
     tts.segmentIndex=0;
+    const accent=item.kind==='speaking'?(detail.palette?.inks?.[0]||'#f2b632'):'#315cc1';
+    ttsPlayer().style.setProperty('--tts-accent',accent);
     $('#tts-title').textContent=item.title||detail.title||detail.question_text.split('\n')[0];
-    $('#tts-kicker').textContent=`${String(tts.itemIndex+1).padStart(2,'0')} / ${String(tts.items.length).padStart(2,'0')} · 自动连播`;
+    $('#tts-open-current').setAttribute('aria-label',`打开当前播放题目：${item.title||detail.title||''}，第 ${tts.itemIndex+1} 个，共 ${tts.items.length} 个`);
     setTtsVisual(item);
     speakTtsSegment();
   }catch(error){toast('语音读取失败：'+error.message);stopTts()}
@@ -687,14 +689,13 @@ async function playKokoroSegment(segment,token){
   audio.preload='auto';audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.82)/.82));
   audio.onended=()=>{if(tts.audio===audio)tts.audio=null;if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
   audio.onerror=()=>{if(tts.audio===audio)tts.audio=null;if(tts.active&&!tts.paused&&token===tts.run)speakSystemSegment(segment,token)};
-  try{await audio.play();$('#tts-detail').textContent=`${segment.label} · Kokoro`;return true}catch(_error){if(tts.audio===audio)tts.audio=null;return false}
+  try{await audio.play();return true}catch(_error){if(tts.audio===audio)tts.audio=null;return false}
 }
 async function speakTtsSegment(){
   if(!tts.active||tts.paused)return;
   if(tts.segmentIndex>=tts.segments.length){advanceTtsItem();return}
   const segment=tts.segments[tts.segmentIndex];
   const token=++tts.run;
-  $('#tts-detail').textContent=segment.label;
   if(await playKokoroSegment(segment,token))return;
   if(tts.active&&!tts.paused&&token===tts.run)speakSystemSegment(segment,token);
 }
@@ -703,7 +704,7 @@ function setTtsPauseUi(paused){
 }
 function advanceTtsItem(){
   if(!tts.active)return;
-  if(!tts.autoplay){setTtsPauseUi(true);$('#tts-detail').textContent='本话题播放完毕';return}
+  if(!tts.autoplay){setTtsPauseUi(true);return}
   if(tts.itemIndex>=tts.items.length-1){toast('当前题库已播放完');stopTts();return}
   tts.itemIndex+=1;tts.segments=[];tts.segmentIndex=0;
   if(tts.kind==='speaking')activeDeckTrack()?._ttsAdvance?.();

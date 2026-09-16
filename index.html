@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preload" href="/assets/topic-covers/thumbs/d1194a5c83b7cf7f611a.webp" as="image" type="image/webp" fetchpriority="high">
-  <link rel="stylesheet" href="/styles.css?v=20260916-22">
+  <link rel="stylesheet" href="/styles.css?v=20260916-25">
 </head>
 <body>
   <canvas id="webgl-background" class="webgl-background" aria-hidden="true"></canvas>
@@ -80,10 +80,10 @@
   </aside>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <section id="tts-player" class="tts-player" hidden aria-label="题库语音播放器">
-    <button id="tts-open-current" class="tts-now" type="button" aria-label="打开当前播放题目"><span id="tts-kicker">自动连播</span><strong id="tts-title">准备播放</strong><small id="tts-detail">题目 + 答案</small></button>
+    <button id="tts-open-current" class="tts-now" type="button" aria-label="打开当前播放题目"><strong id="tts-title">准备播放</strong></button>
     <div class="tts-settings">
-      <label class="tts-option">内容<select id="tts-mode"><option value="qa">题目 + 答案</option><option value="q">只读题目</option></select></label>
-      <label class="tts-option">语速<select id="tts-rate"><option value="0.65">0.65×</option><option value="0.72" selected>0.72×</option><option value="0.82">0.82×</option><option value="0.95">0.95×</option><option value="1.1">1.1×</option></select></label>
+      <label class="tts-option"><select id="tts-mode" aria-label="朗读内容"><option value="qa">题目 + 答案</option><option value="q">只读题目</option></select></label>
+      <label class="tts-option"><select id="tts-rate" aria-label="朗读语速"><option value="0.65">0.65×</option><option value="0.72" selected>0.72×</option><option value="0.82">0.82×</option><option value="0.95">0.95×</option><option value="1.1">1.1×</option></select></label>
       <button id="tts-auto" class="tts-auto" type="button" aria-pressed="true">连播 开</button>
     </div>
     <div class="tts-actions">
@@ -98,6 +98,6 @@
   <script src="/static-api.js"></script>
   <script src="/webgl-background.js"></script>
   <script src="/vendor/gsap-3.13.0.min.js"></script>
-  <script src="/app.js?v=20260916-18"></script>
+  <script src="/app.js?v=20260916-20"></script>
 </body>
 </html>
