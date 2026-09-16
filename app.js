@@ -591,6 +591,13 @@ async function sync(){const b=$('#sync-button');b.disabled=true;b.textContent='�
 const tts={active:false,paused:false,items:[],itemIndex:0,segments:[],segmentIndex:0,run:0,wakeLock:null,kind:'speaking',audio:null,autoplay:localStorage.getItem('ielts-tts-autoplay')!=='false'};
 const ttsPlayer=()=>$('#tts-player');
 let kokoroManifestPromise;
+function unlockTtsAudio(){
+  if(!('Audio'in window))return;
+  const audio=tts.audio||new Audio();tts.audio=audio;
+  audio.playsInline=true;audio.preload='auto';audio.volume=0;audio.src='/assets/audio/kokoro/unlock.mp3';
+  const unlocked=audio.play();
+  if(unlocked?.then)unlocked.then(()=>{if(audio.src.includes('/unlock.mp3')){audio.pause();audio.currentTime=0}audio.volume=1}).catch(()=>{audio.volume=1});
+}
 function kokoroManifest(){
   return kokoroManifestPromise||(kokoroManifestPromise=fetch('/assets/audio/kokoro/manifest.json').then(response=>response.ok?response.json():null).catch(()=>null));
 }
@@ -693,11 +700,11 @@ async function playKokoroSegment(segment,token){
   const manifest=await kokoroManifest();
   const url=manifest?.items?.[segment.text];
   if(!url||!tts.active||tts.paused||token!==tts.run)return false;
-  const audio=new Audio(url);tts.audio=audio;
-  audio.preload='auto';audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.82)/.82));
-  audio.onended=()=>{if(tts.audio===audio)tts.audio=null;if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
-  audio.onerror=()=>{if(tts.audio===audio)tts.audio=null;if(tts.active&&!tts.paused&&token===tts.run)speakSystemSegment(segment,token)};
-  try{await audio.play();return true}catch(_error){if(tts.audio===audio)tts.audio=null;return false}
+  const audio=tts.audio||new Audio();tts.audio=audio;
+  audio.pause();audio.onended=null;audio.onerror=null;audio.src=url;audio.volume=1;audio.preload='auto';audio.playsInline=true;audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.82)/.82));
+  audio.onended=()=>{if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
+  audio.onerror=()=>{if(tts.active&&!tts.paused&&token===tts.run)speakSystemSegment(segment,token)};
+  try{await audio.play();return true}catch(_error){return false}
 }
 async function speakTtsSegment(){
   if(!tts.active||tts.paused)return;
@@ -718,7 +725,7 @@ function advanceTtsItem(){
   if(tts.kind==='speaking')activeDeckTrack()?._ttsAdvance?.();
   setTimeout(loadTtsItem,tts.kind==='speaking'&&!reduceMotion()?1250:120);
 }
-function cancelCurrentSpeech(){tts.run+=1;if(tts.audio){tts.audio.pause();tts.audio.removeAttribute('src');tts.audio.load();tts.audio=null}if('speechSynthesis'in window){speechSynthesis.resume();speechSynthesis.cancel()}}
+function cancelCurrentSpeech(){tts.run+=1;if(tts.audio){tts.audio.pause();tts.audio.onended=null;tts.audio.onerror=null;try{tts.audio.currentTime=0}catch(_error){}}if('speechSynthesis'in window){speechSynthesis.resume();speechSynthesis.cancel()}}
 function stopTts(){
   tts.active=false;tts.paused=false;cancelCurrentSpeech();
   setTimeout(()=>{if(!tts.active&&'speechSynthesis'in window){speechSynthesis.resume();speechSynthesis.cancel()}},80);
@@ -736,6 +743,7 @@ function toggleTts(){
 async function startTts(){
   if(!('Audio'in window)&&!('speechSynthesis'in window)){toast('当前浏览器不支持语音播放');return}
   cancelCurrentSpeech();
+  unlockTtsAudio();
   if('speechSynthesis'in window){const primer=new SpeechSynthesisUtterance('\u00a0');primer.volume=0;speechSynthesis.speak(primer)}
   let items=[];let kind='speaking';
   if(state.view==='writing'){
