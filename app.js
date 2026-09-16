@@ -8,6 +8,12 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const coverThumb=url=>String(url||'').replace(/(\/assets\/(?:topic|category)-covers\/)([^/]+\.webp)$/,'$1thumbs/$2');
 const partName=p=>({part1:'Part 1',part2:'Part 2',part3:'Part 3',task1:'写作 Task 1',task2:'写作 Task 2'}[p]||p);
 const topicName=k=>window.topicCache?.find(t=>t.key===k)?.name||k||'未分类';
+const seasonRange=(date=new Date())=>{const month=date.getMonth()+1;const start=month<=4?1:month<=8?5:9;return{year:date.getFullYear(),start,end:start+3}};
+const monthAbbr=month=>['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][month-1];
+const currentSeasonEnglish=()=>{const s=seasonRange();return`${monthAbbr(s.start)} — ${monthAbbr(s.end)} ${s.year}`};
+const currentSeasonChinese=()=>{const s=seasonRange();return`${s.year}年${s.start}–${s.end}月`};
+function groupSeasonLabel(value){const match=String(value||'').match(/^(\d{4})-(\d{1,2})\/(\d{1,2})$/);return match?`${match[1]}年${Number(match[2])}–${Number(match[3])}月`:currentSeasonChinese()}
+function updateSeasonLabel(){const label=$('#season-label');if(label)label.textContent=currentSeasonEnglish()}
 let questionNotes={};
 try{questionNotes=JSON.parse(localStorage.getItem('ielts-question-notes-v1')||'{}')||{}}catch(_error){questionNotes={}}
 function noteMarkup(questionId){const has=Boolean(String(questionNotes[questionId]||'').trim());return `<div class="question-note ${has?'has-note':''}"><button class="note-toggle" type="button" data-note-toggle="${questionId}" aria-expanded="false">✎ 备忘录</button><div class="note-editor" data-note-editor="${questionId}" hidden><textarea data-note-input="${questionId}" rows="4" maxlength="3000" placeholder="写下关键词、表达思路或自己的例子…">${esc(questionNotes[questionId]||'')}</textarea><small>自动保存在当前设备</small></div></div>`}
@@ -103,7 +109,7 @@ function groupCard(g,coverLoading='lazy'){
   const status=g.season_status==='new'?'<span class="new-badge">当季新题</span>':'<span class="keep-badge">本季在考</span>';
   const inks=g.palette?.inks||['#2148B8','#C65F38'];
   const previews=(g.preview_questions||[]).map((q,i)=>`<li><span>${String(i+1).padStart(2,'0')} · ${partName(q.part)}</span><strong>${esc(q.text)}</strong></li>`).join('');
-  return `<article class="speaking-topic-card ${done===g.question_count?'topic-complete':''}" style="--cover-a:${esc(inks[0])};--cover-b:${esc(inks[1])}" data-group-id="${g.id}" tabindex="0">${coverVisual(g,coverLoading)}<div class="topic-card-copy"><div class="topic-card-top"><div>${status}<h2>${esc(g.title)}</h2></div><span class="season">2026年9–12月</span></div><p>${count} · 已练 <b>${done}/${g.question_count}</b></p><div class="progress-track" aria-label="练习进度 ${percent}%"><span style="width:${percent}%"></span></div><div class="topic-preview" aria-hidden="true"><div class="preview-label"><span>题目速览</span><span>PREVIEW / ${g.question_count}</span></div><ol>${previews}</ol></div><div class="topic-card-foot"><span>${g.family==='p1'?'Part 1':'P2 · P3'}</span><span>${esc(topicName(g.topic))}</span><button>去练习 →</button></div></div></article>`;
+  return `<article class="speaking-topic-card ${done===g.question_count?'topic-complete':''}" style="--cover-a:${esc(inks[0])};--cover-b:${esc(inks[1])}" data-group-id="${g.id}" tabindex="0">${coverVisual(g,coverLoading)}<div class="topic-card-copy"><div class="topic-card-top"><div>${status}<h2>${esc(g.title)}</h2></div><span class="season">${esc(groupSeasonLabel(g.season))}</span></div><p>${count} · 已练 <b>${done}/${g.question_count}</b></p><div class="progress-track" aria-label="练习进度 ${percent}%"><span style="width:${percent}%"></span></div><div class="topic-preview" aria-hidden="true"><div class="preview-label"><span>题目速览</span><span>PREVIEW / ${g.question_count}</span></div><ol>${previews}</ol></div><div class="topic-card-foot"><span>${g.family==='p1'?'Part 1':'P2 · P3'}</span><span>${esc(topicName(g.topic))}</span><button>去练习 →</button></div></div></article>`;
 }
 const finePointer=()=>matchMedia('(hover: hover) and (pointer: fine)').matches;
 let spotlightObserver;
@@ -829,4 +835,5 @@ $('#tts-auto').onclick=toggleTtsAutoplay;
 $('#tts-open-current').onclick=openCurrentTtsItem;
 $('#tts-rate').onchange=()=>{if(tts.audio)tts.audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.72)/.82))};
 bindDrawerSwipe();
+updateSeasonLabel();setInterval(updateSeasonLabel,60*60*1000);
 syncProgress().finally(()=>Promise.all([loadTopics(),loadStats()]).then(()=>loadSpeakingGroups('#current-topic-list','p1')).catch(e=>toast(e.message)));
