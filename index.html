@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="本地雅思口语与写作练习工具">
+  <meta name="theme-color" content="#c6eff4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IELTS 练习台">
+  <title>IELTS 练习台</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css?v=20260916-18">
+</head>
+<body>
+  <canvas id="webgl-background" class="webgl-background" aria-hidden="true"></canvas>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">I</span><div><strong>IELTS 练习台</strong><small>本地题库</small></div></div>
+      <nav aria-label="主导航">
+        <button class="nav-item active" data-view="current"><span>▦</span>本季练习</button>
+        <button class="nav-item" data-view="categories"><span>⌘</span>分类练习</button>
+        <button class="nav-item" data-view="writing"><span>✎</span>写作</button>
+      </nav>
+      <div class="sidebar-note"><span class="pulse"></span><div><strong id="sync-status">本地资料已载入</strong><small>口语题目 · 逐题答案</small></div></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <label class="search"><span>⌕</span><input id="search-input" placeholder="搜索口语话题" aria-label="搜索当前板块"></label>
+        <button id="offline-button" class="secondary" type="button">iPhone 离线</button>
+        <button id="sync-button" class="primary">更新资料</button>
+      </header>
+
+      <section id="current-view" class="view active">
+        <div class="page-heading"><div><p class="eyebrow">SEP — DEC 2026</p><h1>本季练习</h1></div><div class="stats" id="stats"></div></div>
+        <div class="filter-row speaking-tabs" role="group" aria-label="口语部分">
+          <button class="filter active" data-family="p1">Part 1</button>
+          <button class="filter" data-family="p23">Part 2 &amp; 3</button>
+        </div>
+        <div id="current-topic-list" class="topic-list"></div>
+      </section>
+
+      <section id="categories-view" class="view">
+        <div class="page-heading"><div><p class="eyebrow">TOPIC PRACTICE</p><h1>分类练习</h1></div></div>
+        <div id="topic-grid" class="topic-grid"></div>
+        <div id="category-result" hidden>
+          <div class="category-result-head"><button id="clear-category" class="secondary">← 返回全部分类</button><h2 id="category-title"></h2></div>
+          <div class="filter-row speaking-tabs" role="group" aria-label="分类口语部分">
+            <button class="filter active" data-category-family="p1">Part 1</button>
+            <button class="filter" data-category-family="p23">Part 2 &amp; 3</button>
+          </div>
+          <div id="category-topic-list" class="topic-list"></div>
+        </div>
+      </section>
+
+      <section id="writing-view" class="view">
+        <div class="page-heading"><div><p class="eyebrow">WRITING HUB</p><h1>写作</h1></div><button id="index-button" class="secondary">重新索引资料</button></div>
+        <div class="filter-row" role="group" aria-label="写作内容">
+          <button class="filter active" data-writing-tab="questions">写作题目</button>
+          <button class="filter" data-writing-tab="task1">小作文资料</button>
+          <button class="filter" data-writing-tab="task2">大作文资料</button>
+          <button class="filter" data-writing-tab="simon">Simon 观点</button>
+        </div>
+        <label class="resource-search" id="writing-search-wrap" hidden><input id="writing-search" placeholder="搜索写作资料"></label>
+        <div id="writing-list" class="resource-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="drawer-backdrop" class="backdrop" hidden></div>
+  <aside id="detail-drawer" class="drawer" aria-label="练习详情" aria-hidden="true" inert>
+    <button id="close-drawer" class="close" aria-label="关闭">×</button>
+    <div id="detail-content"></div>
+  </aside>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>window.IELTS_STATIC_SITE=true;</script>
+  <script src="/static-api.js"></script>
+  <script src="/webgl-background.js"></script>
+  <script src="/vendor/gsap-3.13.0.min.js"></script>
+  <script src="/app.js?v=20260916-8"></script>
+</body>
+</html>
