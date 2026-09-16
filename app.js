@@ -320,6 +320,7 @@ function bindPhotoDeck(box,groups,navigation,toolbar){
     tl.to(ambientA,{opacity:0,duration:.68,ease:'power3.inOut'},.25);
     tl.to(ambientB,{opacity:1,duration:.68,ease:'power3.inOut'},.25);
   };
+  track._ttsAdvance=()=>advance(1,1);
   track.onclick=e=>{
     if(Date.now()-(track._lastSwipeAt||0)<350||busy)return;
     const card=e.target.closest('.speaking-topic-card');
@@ -524,6 +525,137 @@ async function loadWriting(){const box=$('#writing-list');const tab=state.writin
 function switchView(view){if(state.view===view)return;state.view=view;$$('.view').forEach(v=>v.classList.toggle('active',v.id===view+'-view'));$$('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===view));$('#search-input').placeholder=view==='writing'?'搜索写作题目或资料':'搜索口语话题';if(view==='current')loadSpeakingGroups('#current-topic-list',state.currentFamily);if(view==='categories'&&!state.categoryTopic)loadTopics();if(view==='writing')loadWriting()}
 async function sync(){const b=$('#sync-button');b.disabled=true;b.textContent='正在更新…';try{const r=await api('/api/update',{method:'POST',body:JSON.stringify({limit:20})});toast(`更新完成：新增 ${r.inserted}，更新 ${r.updated}`);await Promise.all([loadStats(),loadTopics()]);switchView(state.view)}catch(e){toast('更新失败：'+e.message)}finally{b.disabled=false;b.textContent='更新资料'}}
 
+const tts={active:false,paused:false,items:[],itemIndex:0,segments:[],segmentIndex:0,run:0,wakeLock:null,kind:'speaking'};
+const ttsPlayer=()=>$('#tts-player');
+function speechChunks(text,max=230){
+  const clean=String(text||'').replace(/https?:\/\/\S+/g,'').replace(/\s+/g,' ').trim();
+  if(!clean)return [];
+  const sentences=clean.match(/[^.!?。！？]+[.!?。！？]+|[^.!?。！？]+$/g)||[clean];
+  const chunks=[];let current='';
+  sentences.forEach(sentence=>{
+    const next=(current+' '+sentence.trim()).trim();
+    if(next.length<=max){current=next;return}
+    if(current)chunks.push(current);
+    if(sentence.length<=max){current=sentence.trim();return}
+    for(let i=0;i<sentence.length;i+=max)chunks.push(sentence.slice(i,i+max));
+    current='';
+  });
+  if(current)chunks.push(current);
+  return chunks;
+}
+function ttsSegment(text,label){return speechChunks(text).map(chunk=>({text:chunk,label}))}
+function preferredVoice(text){
+  const chinese=/[\u3400-\u9fff]/.test(text);
+  const voices=speechSynthesis.getVoices();
+  return voices.find(v=>chinese&&/^zh(-|_)/i.test(v.lang))||voices.find(v=>!chinese&&/^en-GB/i.test(v.lang))||voices.find(v=>!chinese&&/^en/i.test(v.lang))||null;
+}
+async function holdScreenAwake(){
+  if(!navigator.wakeLock||tts.wakeLock)return;
+  try{tts.wakeLock=await navigator.wakeLock.request('screen');tts.wakeLock.addEventListener('release',()=>{tts.wakeLock=null})}catch(_error){}
+}
+function activeDeckTrack(){return state.view==='categories'?$('#category-topic-list .deck-track'):$('#current-topic-list .deck-track')}
+function setTtsVisual(item){
+  $$('.tts-reading').forEach(el=>el.classList.remove('tts-reading'));
+  if(item.kind==='speaking')activeDeckTrack()?.querySelector('.speaking-topic-card.is-spotlight')?.classList.add('tts-reading');
+  else{
+    const card=$(`#writing-list [data-id="${CSS.escape(item.id)}"]`);
+    card?.classList.add('tts-reading');card?.scrollIntoView({behavior:reduceMotion()?'auto':'smooth',block:'center'});
+  }
+}
+function buildSpeakingSegments(group){
+  const segments=[...ttsSegment(`Topic. ${group.title}`,'主题')];
+  group.questions.forEach((question,index)=>{
+    segments.push(...ttsSegment(`${partName(question.part)}. Question ${index+1}. ${question.question_text}`,`问题 ${index+1} / ${group.questions.length}`));
+    if($('#tts-mode').value==='qa'){
+      const answer=question.answer?.answer_text?.trim();
+      segments.push(...ttsSegment(answer?`Answer. ${answer}`:'答案。暂无。',answer?'答案':'暂无答案'));
+    }
+  });
+  return segments;
+}
+function buildWritingSegments(question){
+  const segments=[...ttsSegment(`${partName(question.part)}. ${question.title||''}. ${question.question_text}`,'写作题目')];
+  if($('#tts-mode').value==='qa'){
+    const answer=question.answer?.answer_text?.trim();
+    segments.push(...ttsSegment(answer?`Model answer. ${answer}`:'答案。暂无。',answer?'参考范文':'暂无答案'));
+  }
+  return segments;
+}
+async function loadTtsItem(){
+  if(!tts.active)return;
+  const item=tts.items[tts.itemIndex];
+  try{
+    const detail=await api(item.kind==='speaking'?`/api/speaking-topics/${item.id}`:`/api/questions/${item.id}`);
+    if(!tts.active)return;
+    tts.segments=item.kind==='speaking'?buildSpeakingSegments(detail):buildWritingSegments(detail);
+    tts.segmentIndex=0;
+    $('#tts-title').textContent=item.title||detail.title||detail.question_text.split('\n')[0];
+    $('#tts-kicker').textContent=`${String(tts.itemIndex+1).padStart(2,'0')} / ${String(tts.items.length).padStart(2,'0')} · 自动连播`;
+    setTtsVisual(item);
+    speakTtsSegment();
+  }catch(error){toast('语音读取失败：'+error.message);stopTts()}
+}
+function speakTtsSegment(){
+  if(!tts.active||tts.paused)return;
+  if(tts.segmentIndex>=tts.segments.length){advanceTtsItem();return}
+  const segment=tts.segments[tts.segmentIndex];
+  const token=++tts.run;
+  const utterance=new SpeechSynthesisUtterance(segment.text);
+  utterance.rate=Number($('#tts-rate').value)||.95;
+  utterance.pitch=1;utterance.lang=/[\u3400-\u9fff]/.test(segment.text)?'zh-CN':'en-GB';
+  const voice=preferredVoice(segment.text);if(voice)utterance.voice=voice;
+  $('#tts-detail').textContent=segment.label;
+  utterance.onend=()=>{if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
+  utterance.onerror=event=>{if(tts.active&&token===tts.run&&event.error!=='interrupted'&&event.error!=='canceled'){tts.segmentIndex+=1;speakTtsSegment()}};
+  speechSynthesis.speak(utterance);
+}
+function advanceTtsItem(){
+  if(!tts.active)return;
+  if(tts.itemIndex>=tts.items.length-1){toast('当前题库已播放完');stopTts();return}
+  tts.itemIndex+=1;tts.segments=[];tts.segmentIndex=0;
+  if(tts.kind==='speaking')activeDeckTrack()?._ttsAdvance?.();
+  setTimeout(loadTtsItem,tts.kind==='speaking'&&!reduceMotion()?1250:120);
+}
+function cancelCurrentSpeech(){tts.run+=1;speechSynthesis.cancel()}
+function stopTts(){
+  cancelCurrentSpeech();tts.active=false;tts.paused=false;tts.items=[];tts.segments=[];
+  ttsPlayer().hidden=true;ttsPlayer().classList.remove('is-paused');$('#listen-button').textContent='▷ 听题库';
+  $$('.tts-reading').forEach(el=>el.classList.remove('tts-reading'));
+  if(tts.wakeLock){tts.wakeLock.release().catch(()=>{});tts.wakeLock=null}
+}
+function toggleTts(){
+  if(!tts.active)return;
+  tts.paused=!tts.paused;ttsPlayer().classList.toggle('is-paused',tts.paused);$('#tts-toggle').textContent=tts.paused?'继续':'暂停';
+  if(tts.paused)speechSynthesis.pause();else{speechSynthesis.resume();if(!speechSynthesis.speaking)speakTtsSegment()}
+}
+async function startTts(){
+  if(!('speechSynthesis'in window)){toast('当前浏览器不支持文字转语音');return}
+  cancelCurrentSpeech();
+  const primer=new SpeechSynthesisUtterance('\u00a0');primer.volume=0;speechSynthesis.speak(primer);
+  let items=[];let kind='speaking';
+  if(state.view==='writing'){
+    if(state.writingTab!=='questions'){toast('请先切换到“写作题目”');return}
+    const questions=await api('/api/questions?skill=writing&limit=200');
+    items=questions.map(q=>({id:q.id,title:q.title||q.question_text.split('\n')[0],kind:'writing'}));kind='writing';
+    const active=$('#writing-list .writing-question.tts-reading')?.dataset.id;
+    const at=Math.max(0,items.findIndex(item=>item.id===active));items=[...items.slice(at),...items.slice(0,at)];
+  }else{
+    const family=state.view==='categories'?state.categoryFamily:state.currentFamily;
+    const params=new URLSearchParams({part_group:family});
+    if(state.view==='categories'&&state.categoryTopic)params.set('topic',state.categoryTopic);
+    items=(await api('/api/speaking-topics?'+params)).map(group=>({id:group.id,title:group.title,kind:'speaking'}));
+    const active=activeDeckTrack()?.querySelector('.speaking-topic-card.is-spotlight')?.dataset.groupId;
+    const at=Math.max(0,items.findIndex(item=>item.id===active));items=[...items.slice(at),...items.slice(0,at)];
+  }
+  if(!items.length){toast('当前板块没有可朗读题目');return}
+  tts.active=true;tts.paused=false;tts.items=items;tts.itemIndex=0;tts.kind=kind;ttsPlayer().hidden=false;ttsPlayer().classList.remove('is-paused');
+  $('#tts-toggle').textContent='暂停';$('#listen-button').textContent='正在连播';
+  await holdScreenAwake();loadTtsItem();
+}
+function skipTts(){if(!tts.active)return;cancelCurrentSpeech();tts.segmentIndex+=1;speakTtsSegment()}
+function replayTts(){if(!tts.active)return;cancelCurrentSpeech();speakTtsSegment()}
+document.addEventListener('visibilitychange',()=>{if(tts.active&&document.visibilityState==='visible')void holdScreenAwake()});
+
 async function registerPwa(){
   if(!('serviceWorker'in navigator))return null;
   try{return await navigator.serviceWorker.register('/sw.js',{scope:'/'})}catch(_error){return null}
@@ -552,5 +684,5 @@ if('serviceWorker'in navigator){
   void registerPwa();
 }
 
-$$('.nav-item').forEach(b=>b.onclick=()=>switchView(b.dataset.view));$$('[data-family]').forEach(b=>b.onclick=()=>{$$('[data-family]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.currentFamily=b.dataset.family;loadSpeakingGroups('#current-topic-list',state.currentFamily)});$$('[data-category-family]').forEach(b=>b.onclick=()=>{$$('[data-category-family]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.categoryFamily=b.dataset.categoryFamily;loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic)});$$('[data-writing-tab]').forEach(b=>b.onclick=()=>{$$('[data-writing-tab]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.writingTab=b.dataset.writingTab;loadWriting()});$('#clear-category').onclick=clearCategory;$('#sync-button').onclick=sync;$('#offline-button').onclick=downloadForIPhone;$('#index-button').onclick=async()=>{await api('/api/index-resources',{method:'POST',body:'{}'});toast('资料索引完成');loadWriting()};$('#close-drawer').onclick=closeDrawer;$('#drawer-backdrop').onclick=closeDrawer;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});let timer;$('#search-input').oninput=e=>{clearTimeout(timer);timer=setTimeout(()=>{state.search=e.target.value.trim();if(state.view==='current')loadSpeakingGroups('#current-topic-list',state.currentFamily);else if(state.view==='categories'&&state.categoryTopic)loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic);else if(state.view==='writing')loadWriting()},250)};$('#writing-search').oninput=()=>{clearTimeout(timer);timer=setTimeout(loadWriting,300)};
+$$('.nav-item').forEach(b=>b.onclick=()=>switchView(b.dataset.view));$$('[data-family]').forEach(b=>b.onclick=()=>{$$('[data-family]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.currentFamily=b.dataset.family;loadSpeakingGroups('#current-topic-list',state.currentFamily)});$$('[data-category-family]').forEach(b=>b.onclick=()=>{$$('[data-category-family]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.categoryFamily=b.dataset.categoryFamily;loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic)});$$('[data-writing-tab]').forEach(b=>b.onclick=()=>{$$('[data-writing-tab]').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.writingTab=b.dataset.writingTab;loadWriting()});$('#clear-category').onclick=clearCategory;$('#sync-button').onclick=sync;$('#offline-button').onclick=downloadForIPhone;$('#listen-button').onclick=()=>tts.active?ttsPlayer().removeAttribute('hidden'):startTts();$('#tts-toggle').onclick=toggleTts;$('#tts-next').onclick=skipTts;$('#tts-replay').onclick=replayTts;$('#tts-stop').onclick=stopTts;$('#tts-mode').onchange=()=>{if(tts.active){cancelCurrentSpeech();loadTtsItem()}};$('#index-button').onclick=async()=>{await api('/api/index-resources',{method:'POST',body:'{}'});toast('资料索引完成');loadWriting()};$('#close-drawer').onclick=closeDrawer;$('#drawer-backdrop').onclick=closeDrawer;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});let timer;$('#search-input').oninput=e=>{clearTimeout(timer);timer=setTimeout(()=>{state.search=e.target.value.trim();if(state.view==='current')loadSpeakingGroups('#current-topic-list',state.currentFamily);else if(state.view==='categories'&&state.categoryTopic)loadSpeakingGroups('#category-topic-list',state.categoryFamily,state.categoryTopic);else if(state.view==='writing')loadWriting()},250)};$('#writing-search').oninput=()=>{clearTimeout(timer);timer=setTimeout(loadWriting,300)};
 syncProgress().finally(()=>Promise.all([loadTopics(),loadStats()]).then(()=>loadSpeakingGroups('#current-topic-list','p1')).catch(e=>toast(e.message)));

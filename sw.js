@@ -1,5 +1,5 @@
-const CACHE_VERSION='ielts-pages-v3';
-const SHELL=['/','/styles.css?v=20260916-19','/app.js?v=20260916-10','/webgl-background.js','/vendor/gsap-3.13.0.min.js','/favicon.svg','/manifest.webmanifest','/static-api.js','/site-data.json','/icons/apple-touch-icon.png','/icons/icon-192.png','/icons/icon-512.png'];
+const CACHE_VERSION='ielts-pages-v4';
+const SHELL=['/','/styles.css?v=20260916-20','/app.js?v=20260916-11','/webgl-background.js','/vendor/gsap-3.13.0.min.js','/favicon.svg','/manifest.webmanifest','/static-api.js','/site-data.json','/icons/apple-touch-icon.png','/icons/icon-192.png','/icons/icon-512.png'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
