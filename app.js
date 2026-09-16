@@ -594,9 +594,10 @@ let kokoroManifestPromise;
 function unlockTtsAudio(){
   if(!('Audio'in window))return;
   const audio=tts.audio||new Audio();tts.audio=audio;
-  audio.playsInline=true;audio.preload='auto';audio.volume=0;audio.src='/assets/audio/kokoro/unlock.mp3';
+  if(!audio.isConnected){audio.id='tts-audio-engine';audio.hidden=true;document.body.appendChild(audio)}
+  audio.playsInline=true;audio.preload='auto';audio.loop=true;audio.volume=0;audio.src='/assets/audio/kokoro/unlock.mp3';
   const unlocked=audio.play();
-  if(unlocked?.then)unlocked.then(()=>{if(audio.src.includes('/unlock.mp3')){audio.pause();audio.currentTime=0}audio.volume=1}).catch(()=>{audio.volume=1});
+  if(unlocked?.catch)unlocked.catch(()=>{});
 }
 function kokoroManifest(){
   return kokoroManifestPromise||(kokoroManifestPromise=fetch('/assets/audio/kokoro/manifest.json').then(response=>response.ok?response.json():null).catch(()=>null));
@@ -701,10 +702,10 @@ async function playKokoroSegment(segment,token){
   const url=manifest?.items?.[segment.text];
   if(!url||!tts.active||tts.paused||token!==tts.run)return false;
   const audio=tts.audio||new Audio();tts.audio=audio;
-  audio.pause();audio.onended=null;audio.onerror=null;audio.src=url;audio.volume=1;audio.preload='auto';audio.playsInline=true;audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.82)/.82));
+  audio.onended=null;audio.onerror=null;audio.loop=false;audio.src=url;audio.volume=1;audio.preload='auto';audio.playsInline=true;audio.playbackRate=Math.max(.7,Math.min(1.4,(Number($('#tts-rate').value)||.82)/.82));
   audio.onended=()=>{if(tts.active&&!tts.paused&&token===tts.run){tts.segmentIndex+=1;speakTtsSegment()}};
   audio.onerror=()=>{if(tts.active&&!tts.paused&&token===tts.run)speakSystemSegment(segment,token)};
-  try{await audio.play();return true}catch(_error){return false}
+  try{await audio.play();return true}catch(_error){setTtsPauseUi(true);toast('请点绿色播放键启用 Kokoro 语音');return true}
 }
 async function speakTtsSegment(){
   if(!tts.active||tts.paused)return;
