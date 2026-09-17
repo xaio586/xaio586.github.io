@@ -200,6 +200,8 @@ body{background:#e1f5fe}
 .deck-track .speaking-topic-card .topic-cover{height:190px}.deck-track .speaking-topic-card .topic-card-copy{padding:16px 18px 15px}.deck-track .topic-card-foot>span:first-child{white-space:nowrap}.deck-track .topic-card-foot>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.deck-track .topic-card-foot button{flex:none;white-space:nowrap}
 .deck-track{cursor:grab;touch-action:pan-y}.deck-track.is-dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}.deck-track.is-dragging .speaking-topic-card{transition:none}
 .deck-bottom{margin-top:3px}.deck-bottom>span{color:#5d6d86;font-size:.72rem}.deck-mode-switch{border:1px solid #ffffffeb;border-radius:999px;background:#ffffffd8;color:#253b69;padding:8px 12px;font-size:.72rem;font-weight:750;cursor:pointer;box-shadow:inset 0 1px 0 #fff,0 5px 13px #253c6610;transition:transform 130ms var(--ease-out)}.deck-mode-switch:active{transform:scale(.96)}
+.deck-mode-switch{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:18;padding:11px 15px;background:#ffffffdc;box-shadow:inset 0 1px 0 #fff,0 10px 28px #17337f2b;-webkit-backdrop-filter:blur(16px) saturate(125%);backdrop-filter:blur(16px) saturate(125%)}
+.tts-active .deck-mode-switch{bottom:max(226px,calc(env(safe-area-inset-bottom) + 226px))}
 .topic-list.is-list .deck-shell{overflow:visible;padding:15px 0;background:#f7faff;border-color:#e0e9f7;display:flex;flex-direction:column}.topic-list.is-list .deck-shell:before{display:none}.topic-list.is-list .deck-head{order:0}.topic-list.is-list .deck-navigation{display:none}.topic-list.is-list .deck-bottom{order:1;margin-top:13px}.topic-list.is-list .deck-track{order:2;height:auto;overflow:visible;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;padding:18px 24px;scroll-snap-type:none}.topic-list.is-list .deck-track .speaking-topic-card{width:auto;min-width:0;margin:0;flex:auto;opacity:1;transform:none}.topic-list.is-list .deck-track .speaking-topic-card.is-spotlight{transform:translateY(-2px) scale(1.025)}
 @media(max-width:900px){.topic-list.is-list .deck-track{grid-template-columns:1fr}}
 @media(max-width:580px){.deck-shell{border-radius:29px;padding-top:15px}.deck-head,.deck-bottom{padding:0 16px}.deck-track{height:590px;padding-block:12px}.deck-track .speaking-topic-card{border-radius:25px}.deck-track .speaking-topic-card .topic-cover{height:174px;border-radius:24px 24px 12px 12px}.deck-track .speaking-topic-card .topic-card-copy{padding:14px 16px 13px}.deck-track .topic-card-top h2{font-size:1.17rem}.deck-track .speaking-topic-card p{margin:10px 0}.deck-bottom>span{font-size:.65rem}.topic-list.is-list .deck-track{padding:15px 10px;gap:15px}}
@@ -302,13 +304,13 @@ body{background:#e1f5fe}
 @keyframes water-ripple{0%{opacity:0;transform:translate3d(-50%,0,0) scale(.62,.7)}38%{opacity:.62}100%{opacity:0;transform:translate3d(-50%,0,0) scale(1.18,1)}}
 @media(prefers-reduced-motion:reduce){.deck-shell.water-reveal:before,.deck-shell.water-reveal:after{display:none;animation:none}}
 
-/* iPhone/PWA controls share the same translucent treatment as the rest of the toolbar. */
-#offline-button{white-space:nowrap;background:#ffffff8f;border-color:#ffffffb8;color:#29436c;-webkit-backdrop-filter:blur(14px) saturate(120%);backdrop-filter:blur(14px) saturate(120%)}
+/* The resume action replaces the one-off offline download control. */
+#resume-button{white-space:nowrap;background:#ffffff8f;border-color:#ffffffb8;color:#29436c;-webkit-backdrop-filter:blur(14px) saturate(120%);backdrop-filter:blur(14px) saturate(120%)}
 #listen-button{white-space:nowrap;background:#ffffffa8;border-color:#ffffffd6;color:#17337f;-webkit-backdrop-filter:blur(14px) saturate(120%);backdrop-filter:blur(14px) saturate(120%)}
 #tts-top-stop{white-space:nowrap;background:#17337fdb;border-color:#ffffffd6;color:#fff;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
-.tts-active #offline-button,.tts-active #sync-button{display:none}
-#offline-button:disabled{opacity:.72;cursor:wait}
-@media(max-width:680px){.topbar{height:auto;min-height:0;gap:8px;flex-wrap:wrap;padding-bottom:8px}.topbar .search{order:1;width:100%;flex-basis:100%}.topbar #listen-button,.topbar #tts-top-stop,.topbar #offline-button,.topbar #sync-button{order:2;flex:1 1 29%;min-width:0;padding-inline:8px;font-size:.75rem}.tts-active .topbar #listen-button,.tts-active .topbar #tts-top-stop{flex-basis:44%}.view{padding-top:9px}}
+.tts-active #resume-button,.tts-active #sync-button{display:none}
+#resume-button:disabled{opacity:.72;cursor:wait}
+@media(max-width:680px){.topbar{height:auto;min-height:0;gap:8px;flex-wrap:wrap;padding-bottom:8px}.topbar .search{order:1;width:100%;flex-basis:100%}.topbar #listen-button,.topbar #tts-top-stop,.topbar #resume-button,.topbar #sync-button{order:2;flex:1 1 29%;min-width:0;padding-inline:8px;font-size:.75rem}.tts-active .topbar #listen-button,.tts-active .topbar #tts-top-stop{flex-basis:44%}.view{padding-top:9px}}
 
 /* Mobile detail is dismissed like a physical sheet: drag it to the right. */
 .drawer.is-swipe-dragging{transition:none!important;will-change:transform;user-select:none}
@@ -333,3 +335,4 @@ body{background:#e1f5fe}
 
 /* Per-question private memo, stored locally for offline use. */
 .question-note{margin-top:14px;padding-top:12px;border-top:1px solid #dce5f0}.note-toggle{border:0;border-radius:999px;padding:7px 11px;background:#ffffffa3;color:#42587b;font-size:.72rem;font-weight:720;cursor:pointer;box-shadow:inset 0 1px 0 #fff,0 5px 14px #17337f12}.question-note.has-note .note-toggle{color:#1d6f57;background:#e4f7efc9}.note-editor{margin-top:10px}.note-editor textarea{display:block;width:100%;box-sizing:border-box;resize:vertical;min-height:92px;border:1px solid #ffffffd9;border-radius:15px;padding:12px 13px;background:#ffffff94;color:#263653;font:400 .84rem/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;outline:none;box-shadow:inset 2px 3px 8px #8da0bb20;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}.note-editor textarea:focus{border-color:#8ca9dd;box-shadow:0 0 0 3px #86a8e82b,inset 2px 3px 8px #8da0bb20}.note-editor small{display:block;margin:6px 3px 0;color:#77849a;font-size:.62rem}.writing-prompt-card .question-note{position:relative;z-index:1}
+@media(max-width:680px){.note-editor textarea{font-size:16px;line-height:1.5;resize:none}}
