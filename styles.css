@@ -321,6 +321,25 @@ body{background:#e1f5fe}
   .drawer:after{content:"";position:fixed;left:7px;top:50%;z-index:8;width:4px;height:42px;border-radius:999px;background:#ffffffa8;box-shadow:0 2px 12px #17337f24;transform:translateY(-50%);pointer-events:none}
 }
 @media(prefers-reduced-motion:reduce){.drawer.is-swipe-dragging,.drawer.is-swipe-settling{transition:none!important}}
+
+/* App-native writing library */
+#writing-list .resource-card{display:grid;grid-template-columns:168px minmax(0,1fr);gap:18px;align-items:stretch;padding:12px;cursor:pointer;transition:transform 180ms var(--ease-out),box-shadow 180ms var(--ease-out)}
+#writing-list .resource-card:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 #fff,0 18px 34px #38558d18}
+.resource-card-image{width:100%;height:124px;object-fit:cover;border-radius:17px;display:block;background:#e9edf5}
+.resource-card .resource-title{align-items:center;padding:7px 9px 7px 0}
+.resource-card .resource-title button{flex:none;border:0;border-radius:999px;background:#fff;color:var(--cobalt);padding:9px 13px;font-weight:750;box-shadow:inset 0 1px 0 #fff,0 6px 14px #38558d14;cursor:pointer}
+.drawer.resource-detail{width:min(760px,96vw);background:linear-gradient(160deg,#f4f7fbf5,#fffaf4f3)}
+.resource-reader{--reader-width:620px;max-width:var(--reader-width);margin:0 auto;color:#182542}
+.resource-reader-hero{margin:-34px -37px 30px;overflow:hidden;border-radius:30px 0 24px 24px;aspect-ratio:4/3;background:#eceeea}
+.resource-reader-hero img,.resource-interlude img{width:100%;height:100%;object-fit:cover;display:block}
+.resource-reader header{padding:0 4px 24px;border-bottom:1px solid #cad5e8}
+.resource-reader header h2{margin-top:11px;font-size:clamp(2rem,7vw,3.35rem);line-height:1.02}
+.resource-reader header p{color:var(--muted);font-size:.78rem;margin:0}
+.resource-page{padding:30px 4px 12px}
+.resource-page>span{display:block;color:#6b7fa8;font:700 .65rem/1 Consolas,monospace;letter-spacing:.16em;margin-bottom:16px}
+.resource-page-text{white-space:pre-wrap;font:normal 1rem/1.88 "Segoe UI","Microsoft YaHei",sans-serif;color:#263653;overflow-wrap:anywhere}
+.resource-interlude{margin:36px 0 8px;aspect-ratio:4/3;overflow:hidden;border-radius:24px;box-shadow:0 18px 34px #253f731a;background:#eceeea}
+@media(max-width:580px){#writing-list .resource-card{grid-template-columns:112px minmax(0,1fr);gap:11px;padding:9px}.resource-card-image{height:105px;border-radius:15px}.resource-card .resource-title{padding:3px 4px 3px 0;display:block}.resource-card .resource-title button{margin-top:10px;padding:7px 11px;font-size:.72rem}.drawer.resource-detail{width:100vw}.resource-reader-hero{margin:-25px -19px 25px;border-radius:23px 0 18px 18px}.resource-reader header h2{margin-right:32px}.resource-page{padding-top:25px}.resource-page-text{font-size:.96rem;line-height:1.83}.resource-interlude{margin:28px 0 4px;border-radius:18px}}
 @media(display-mode:standalone){body{padding:0}.app-shell{min-height:100svh;padding-bottom:env(safe-area-inset-bottom)}main{padding-right:env(safe-area-inset-right)}@media(max-width:900px){.sidebar{padding-top:calc(11px + env(safe-area-inset-top));padding-left:calc(15px + env(safe-area-inset-left));padding-right:calc(15px + env(safe-area-inset-right))}}}
 
 /* Tactile neomorphic hands-free player. */

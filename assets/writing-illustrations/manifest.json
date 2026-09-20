@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-09-21T00:00:00+08:00",
+  "skill": "mono-color",
+  "format": {
+    "full": "1200x900 WebP quality 78",
+    "thumbnail": "720x540 WebP quality 60",
+    "rules": "adaptive paper substrate, no more than two printing inks, active negative space, readable human typography"
+  },
+  "illustrations": [
+    {
+      "file": "argument-map.webp",
+      "keywords": ["CLAIM", "EVIDENCE", "COUNTERPOINT"],
+      "substrate": "cool gray #E9E9E5",
+      "inks": ["charcoal #30343A", "signal red #C83232"],
+      "recipe": "ruled information sheet, branching argument diagram, crisp grotesk and mono labels",
+      "final_prompt": "Original two-ink editorial study poster titled ARGUMENT MAP: a central claim branches toward evidence and counterpoint, with restrained arrows, annotations and active negative space; cool gray paper, charcoal and signal-red print, visible halftone and slight registration drift, no logos."
+    },
+    {
+      "file": "ideas-in-margin.webp",
+      "keywords": ["IDEA", "EXAMPLE", "WHY"],
+      "substrate": "neutral white #F4F3EF",
+      "inks": ["mint #5EB783", "warm charcoal #302D2E"],
+      "recipe": "annotated journal page, marginalia, airy typographic rhythm",
+      "final_prompt": "Original two-ink editorial illustration titled IDEAS IN THE MARGIN: an open notebook with short handwritten prompts IDEA, EXAMPLE and WHY orbiting a loose thought structure; neutral white paper, mint and warm-charcoal ink, generous whitespace, tactile halftone, no logos."
+    },
+    {
+      "file": "longer-lives.webp",
+      "keywords": ["LONGER", "LIVES", "CARE"],
+      "substrate": "pale beige #EEE8DC",
+      "inks": ["mint #5EB783", "warm charcoal #302D2E"],
+      "recipe": "specimen-like human timeline, calm editorial spacing",
+      "final_prompt": "Original two-ink editorial poster titled LONGER LIVES: a poetic human-life timeline with two older figures, a chair and a growing plant, balancing longevity, care and community; pale-beige paper, mint and warm-charcoal ink, soft halftone, no logos."
+    },
+    {
+      "file": "later-beginnings.webp",
+      "keywords": ["LATER", "BEGINNINGS", "CHOICE"],
+      "substrate": "neutral white #F4F3EF",
+      "inks": ["cobalt #2148B8", "terracotta #C65F38"],
+      "recipe": "contemporary editorial cover, calendar and nesting forms",
+      "final_prompt": "Original two-ink editorial cover titled LATER BEGINNINGS: a calendar, two adult silhouettes and a small nested circle suggest delayed parenthood and personal choice; neutral white paper, cobalt and terracotta ink, bold serif-grotesk hierarchy, no logos."
+    },
+    {
+      "file": "city-pressure.webp",
+      "keywords": ["CITY", "PRESSURE", "SPACE"],
+      "substrate": "cool gray #E9E9E5",
+      "inks": ["ultramarine #263E99", "safety orange #E55D2B"],
+      "recipe": "dense overprint collage, rising blocks and compressed pedestrian scale",
+      "final_prompt": "Original two-ink editorial collage titled CITY PRESSURE: compressed high-rise blocks, tiny commuters, transit lines and one pocket of open space express urban scale and pressure; cool-gray paper, ultramarine and safety-orange ink, energetic overprint, no logos."
+    },
+    {
+      "file": "clothes-we-share.webp",
+      "keywords": ["WEAR", "SHARE", "IDENTITY"],
+      "substrate": "neutral white #F4F3EF",
+      "inks": ["cyan #159DDA", "brick red #B64032"],
+      "recipe": "object field, garments linked by tags and thread",
+      "final_prompt": "Original two-ink editorial poster titled CLOTHES WE SHARE: a jacket, shirt and shoes connected by thread, tags and repeated human traces, exploring fashion, identity and reuse; neutral white paper, cyan and brick-red ink, modern halftone, no logos."
+    },
+    {
+      "file": "read-the-chart.webp",
+      "keywords": ["TREND", "COMPARE", "CHANGE"],
+      "substrate": "cool gray #E9E9E5",
+      "inks": ["powder blue #9EB8D3", "signal red #C83232"],
+      "recipe": "image field of abstract bars and curves, analytical margin notes",
+      "final_prompt": "Original two-ink editorial information poster titled READ THE CHART: abstract bars, a line curve and comparison marks form a clear visual grammar for trend, compare and change; cool-gray paper, powder-blue and signal-red ink, precise grid with slight print texture, no logos."
+    },
+    {
+      "file": "what-we-give.webp",
+      "keywords": ["GIVE", "MEANING", "MEMORY"],
+      "substrate": "pale beige #EEE8DC",
+      "inks": ["botanical green #008A4B", "oxblood #8F3434"],
+      "recipe": "still-life gift objects, ribbon as narrative line, warm negative space",
+      "final_prompt": "Original two-ink editorial still life titled WHAT WE GIVE: a wrapped object, flower and note linked by a ribbon, suggesting meaning and memory rather than luxury; pale-beige paper, botanical-green and oxblood ink, tactile grain and active whitespace, no logos."
+    }
+  ]
+}

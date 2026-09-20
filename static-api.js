@@ -46,9 +46,10 @@
       const section=url.searchParams.get('section');
       const term=(url.searchParams.get('q')||'').toLowerCase();
       if(section)docs=docs.filter(item=>item.metadata?.section===section);
-      if(term)docs=docs.filter(item=>item.title.toLowerCase().includes(term));
+      if(term)docs=docs.filter(item=>item.title.toLowerCase().includes(term)||(item.pages||[]).some(page=>page.text.toLowerCase().includes(term)));
       return json(docs);
     }
+    if(url.pathname.startsWith('/api/resources/'))return json(data.resources.find(item=>item.id===url.pathname.split('/').pop())||{error:'资料不存在'});
     return notFound('静态接口不存在');
   };
 })();
