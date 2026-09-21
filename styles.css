@@ -338,6 +338,8 @@ body{background:#e1f5fe}
 .resource-page{padding:30px 4px 12px}
 .resource-page>span{display:block;color:#6b7fa8;font:700 .65rem/1 Consolas,monospace;letter-spacing:.16em;margin-bottom:16px}
 .resource-page-text{white-space:pre-wrap;font:normal 1rem/1.88 "Segoe UI","Microsoft YaHei",sans-serif;color:#263653;overflow-wrap:anywhere}
+.resource-page.is-toc{padding-top:18px}
+.resource-page.is-toc .resource-page-text{font-size:.86rem;line-height:1.58;letter-spacing:.005em;color:#52617a;white-space:pre-line}
 .resource-interlude{margin:36px 0 8px;aspect-ratio:4/3;overflow:hidden;border-radius:24px;box-shadow:0 18px 34px #253f731a;background:#eceeea}
 @media(max-width:580px){#writing-list .resource-card{grid-template-columns:112px minmax(0,1fr);gap:11px;padding:9px}.resource-card-image{height:105px;border-radius:15px}.resource-card .resource-title{padding:3px 4px 3px 0;display:block}.resource-card .resource-title button{margin-top:10px;padding:7px 11px;font-size:.72rem}.drawer.resource-detail{width:100vw}.resource-reader-hero{margin:-25px -19px 25px;border-radius:23px 0 18px 18px}.resource-reader header h2{margin-right:32px}.resource-page{padding-top:25px}.resource-page-text{font-size:.96rem;line-height:1.83}.resource-interlude{margin:28px 0 4px;border-radius:18px}}
 @media(display-mode:standalone){body{padding:0}.app-shell{min-height:100svh;padding-bottom:env(safe-area-inset-bottom)}main{padding-right:env(safe-area-inset-right)}@media(max-width:900px){.sidebar{padding-top:calc(11px + env(safe-area-inset-top));padding-left:calc(15px + env(safe-area-inset-left));padding-right:calc(15px + env(safe-area-inset-right))}}}
