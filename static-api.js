@@ -2,7 +2,7 @@
   if(!window.IELTS_STATIC_SITE)return;
   const nativeFetch=window.fetch.bind(window);
   let snapshotPromise;
-  const snapshot=()=>snapshotPromise||(snapshotPromise=nativeFetch('./site-data.json?v=20260922-01',{cache:'no-store'}).then(r=>{
+  const snapshot=()=>snapshotPromise||(snapshotPromise=nativeFetch('./site-data.json?v=20260922-03',{cache:'no-store'}).then(r=>{
     if(!r.ok)throw new Error('题库快照加载失败');
     return r.json();
   }));
