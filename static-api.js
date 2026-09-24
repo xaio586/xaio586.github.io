@@ -2,7 +2,7 @@
   if(!window.IELTS_STATIC_SITE)return;
   const nativeFetch=window.fetch.bind(window);
   let snapshotPromise;
-  const snapshot=()=>snapshotPromise||(snapshotPromise=nativeFetch('./site-data.json?v=20260924-01',{cache:'no-store'}).then(r=>{
+  const snapshot=()=>snapshotPromise||(snapshotPromise=nativeFetch('./site-data.json?v=20260924-03',{cache:'no-store'}).then(r=>{
     if(!r.ok)throw new Error('题库快照加载失败');
     return r.json();
   }));
@@ -33,6 +33,7 @@
       if(term)groups=groups.filter(group=>group.title.toLowerCase().includes(term)||(group.preview_questions||[]).some(item=>item.text.toLowerCase().includes(term)));
       return json(groups);
     }
+    if(url.pathname==='/api/speaking-materials')return json(data.speaking_materials||[]);
     if(url.pathname.startsWith('/api/speaking-topics/'))return json(data.speaking_details[url.pathname.split('/').pop()]||{error:'话题不存在'});
     if(url.pathname==='/api/questions'){
       let questions=data.writing_questions;
