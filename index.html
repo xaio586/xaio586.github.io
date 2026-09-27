@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preload" href="/assets/topic-covers/thumbs/d1194a5c83b7cf7f611a.webp" as="image" type="image/webp" fetchpriority="high">
-  <link rel="stylesheet" href="/styles.css?v=20260924-04">
+  <link rel="stylesheet" href="/styles.css?v=20260927-01">
 </head>
 <body>
   <canvas id="webgl-background" class="webgl-background" aria-hidden="true"></canvas>
@@ -80,6 +80,14 @@
     <div id="detail-content"></div>
   </aside>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="resource-image-viewer" class="resource-image-viewer" hidden aria-hidden="true">
+    <button id="resource-image-close" class="resource-image-close" type="button" aria-label="关闭大图">×</button>
+    <div class="resource-image-stage">
+      <img id="resource-image-full" alt="" draggable="false">
+    </div>
+    <button id="resource-image-zoom" class="resource-image-zoom" type="button" aria-pressed="false">放大 2×</button>
+    <p>点按图片切换大小 · 放大后可拖动查看</p>
+  </div>
   <section id="tts-player" class="tts-player" hidden aria-label="题库语音播放器">
     <button id="tts-open-current" class="tts-now" type="button" aria-label="打开当前播放题目"><strong id="tts-title">准备播放</strong></button>
     <div class="tts-settings">
@@ -96,9 +104,9 @@
     </div>
   </section>
   <script>window.IELTS_STATIC_SITE=true;</script>
-  <script src="/static-api.js?v=20260924-04"></script>
+  <script src="/static-api.js?v=20260927-01"></script>
   <script src="/webgl-background.js"></script>
   <script src="/vendor/gsap-3.13.0.min.js"></script>
-  <script src="/app.js?v=20260924-04"></script>
+  <script src="/app.js?v=20260927-01"></script>
 </body>
 </html>
